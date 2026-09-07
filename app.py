@@ -167,7 +167,7 @@ if not signed_in():
         </div>
         """, unsafe_allow_html=True)
 
-        if false:
+        if False:
             st.write("")
             if st.button("Continue with Google", type="primary", use_container_width=True):
                 st.login("google")
