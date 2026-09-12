@@ -121,32 +121,18 @@ def load_model():
 
 model = load_model()
 
-# ---------- AUTH CONFIG ----------
-def auth_ready():
-    try:
-        return (
-            "auth" in st.secrets
-            and "google" in st.secrets["auth"]
-            and bool(st.secrets["auth"]["google"].get("client_id"))
-            and bool(st.secrets["auth"]["google"].get("client_secret"))
-        )
-    except Exception:
-        return False
+# ---------- DEMO LOGIN ----------
+DEMO_USERNAME = "demo"
+DEMO_PASSWORD = "demo"
 
-AUTH_READY = auth_ready()
+if "authenticated" not in st.session_state:
+    st.session_state["authenticated"] = False
 
-def signed_in():
-    try:
-        return AUTH_READY and st.user.is_logged_in
-    except Exception:
-        return False
-
-# ---------- PUBLIC LANDING / LOGIN ----------
-if not signed_in():
+if not st.session_state["authenticated"]:
     st.markdown('<div class="login-wrap">', unsafe_allow_html=True)
     st.markdown("""
     <div class="hero">
-      <div class="eyebrow">Secure Research Portal</div>
+      <div class="eyebrow">Academic Research Prototype</div>
       <h1>🏥 CareFlow AI</h1>
       <p>
         A machine-learning decision-support system for estimating outpatient waiting time
@@ -155,73 +141,58 @@ if not signed_in():
     </div>
     """, unsafe_allow_html=True)
 
-    left, right = st.columns([1.15, .85])
+    left, right = st.columns([1.05, .95])
+
     with left:
         st.markdown("""
         <div class="login-card">
-          <div class="section-title">Welcome to CareFlow AI</div>
+          <div class="section-title">Demo Login</div>
           <div class="section-sub">
-            Sign in before accessing the prediction dashboard, model performance,
-            research information and patient-flow tools.
+            Enter the demonstration username and password to access the CareFlow AI dashboard.
           </div>
         </div>
         """, unsafe_allow_html=True)
 
-        if False:
-            st.write("")
-            if st.button("Continue with Google", type="primary", use_container_width=True):
-                st.login("google")
-        else:
-            st.warning(
-                "Google sign-in is not configured on this local copy yet. "
-                "After public deployment, add the Google OAuth credentials in Streamlit secrets."
+        with st.form("demo_login_form"):
+            username = st.text_input("Username", placeholder="Enter username")
+            password = st.text_input("Password", type="password", placeholder="Enter password")
+            login_clicked = st.form_submit_button(
+                "Sign in to CareFlow AI",
+                type="primary",
+                use_container_width=True
             )
-            st.caption("For local interface testing only, use Preview Mode below.")
-            if st.button("Preview Dashboard Locally", use_container_width=True):
-                st.session_state["local_preview"] = True
 
-        if st.session_state.get("local_preview"):
-            st.session_state["preview_access"] = True
+        if login_clicked:
+            if username.strip() == DEMO_USERNAME and password == DEMO_PASSWORD:
+                st.session_state["authenticated"] = True
+                st.session_state["user_name"] = "Demo User"
+                st.rerun()
+            else:
+                st.error("Incorrect username or password. Please use the demonstration credentials.")
 
-        st.markdown("""
-        <div style="margin-top:16px;color:#64748b;font-size:.9rem">
-          By continuing, users access a research prototype intended for academic evaluation.
-        </div>
-        """, unsafe_allow_html=True)
+        st.info("Presentation login — Username: **demo**  |  Password: **demo**")
+        st.caption(
+            "This simple login is intended only for academic demonstration. "
+            "It is not production authentication."
+        )
 
     with right:
         st.markdown("""
         <div class="panel">
           <div class="section-title">What you can do</div>
-          <div class="step"><div class="step-num">1</div><div><b>Predict</b><br><span style="color:#64748b">Estimate expected waiting time from live queue conditions.</span></div></div>
-          <div class="step"><div class="step-num">2</div><div><b>Review</b><br><span style="color:#64748b">See the selected model and evaluation metrics.</span></div></div>
-          <div class="step"><div class="step-num">3</div><div><b>Understand</b><br><span style="color:#64748b">Review the research purpose, method and limitations.</span></div></div>
-          <div class="step" style="border-bottom:none"><div class="step-num">4</div><div><b>Operate</b><br><span style="color:#64748b">Use a clean dashboard designed for GOPD workflow demonstration.</span></div></div>
+          <div class="step"><div class="step-num">1</div><div><b>Predict</b><br><span style="color:#64748b">Estimate waiting time from outpatient-flow conditions.</span></div></div>
+          <div class="step"><div class="step-num">2</div><div><b>Review</b><br><span style="color:#64748b">Inspect the selected model and evaluation metrics.</span></div></div>
+          <div class="step"><div class="step-num">3</div><div><b>Understand</b><br><span style="color:#64748b">Review the project purpose, method and limitations.</span></div></div>
+          <div class="step" style="border-bottom:none"><div class="step-num">4</div><div><b>Demonstrate</b><br><span style="color:#64748b">Present a clean end-to-end GOPD prediction workflow.</span></div></div>
         </div>
         """, unsafe_allow_html=True)
 
-    f1, f2, f3 = st.columns(3)
-    with f1:
-        st.markdown('<div class="feature"><div>⚡</div><h4>Fast Prediction</h4><p>Generate an estimated waiting time from current outpatient-flow variables.</p></div>', unsafe_allow_html=True)
-    with f2:
-        st.markdown('<div class="feature"><div>📊</div><h4>Model Evidence</h4><p>View the selected XGBoost model and key held-out test metrics.</p></div>', unsafe_allow_html=True)
-    with f3:
-        st.markdown('<div class="feature"><div>🔒</div><h4>Controlled Access</h4><p>Public deployment can require Google sign-in before dashboard access.</p></div>', unsafe_allow_html=True)
-
     st.markdown('</div>', unsafe_allow_html=True)
+    st.stop()
 
-    if not st.session_state.get("preview_access"):
-        st.stop()
-
-# ---------- AUTHENTICATED / PREVIEW APP ----------
-user_name = "Preview User"
-user_email = "Local preview"
-if signed_in():
-    try:
-        user_name = getattr(st.user, "name", None) or getattr(st.user, "email", "User")
-        user_email = getattr(st.user, "email", "")
-    except Exception:
-        pass
+# ---------- AUTHENTICATED DEMO APP ----------
+user_name = st.session_state.get("user_name", "Demo User")
+user_email = "Academic demonstration account"
 
 with st.sidebar:
     st.markdown("## 🏥 CareFlow AI")
@@ -239,13 +210,10 @@ with st.sidebar:
     st.write(f"**{user_name}**")
     st.caption(user_email)
 
-    if signed_in():
-        if st.button("Sign out", use_container_width=True):
-            st.logout()
-    elif st.session_state.get("preview_access"):
-        if st.button("Exit Preview", use_container_width=True):
-            st.session_state["preview_access"] = False
-            st.rerun()
+    if st.button("Sign out", use_container_width=True):
+        st.session_state["authenticated"] = False
+        st.session_state.pop("user_name", None)
+        st.rerun()
 
 # ---------- DASHBOARD ----------
 if nav == "Dashboard":
@@ -290,7 +258,7 @@ if nav == "Dashboard":
           <p><b>Framework:</b> Streamlit</p>
           <p><b>Model:</b> XGBoost Regression</p>
           <p><b>Purpose:</b> Academic research prototype</p>
-          <p><b>Deployment:</b> Local now; public deployment can enable Google sign-in.</p>
+          <p><b>Access:</b> Demonstration username and password for academic presentation.</p>
         </div>
         """, unsafe_allow_html=True)
 
@@ -393,13 +361,13 @@ elif nav == "About the Project":
     <div class="hero">
       <div class="eyebrow">Research Overview</div>
       <h1>About the Project</h1>
-      <p>Development of a Predictive Model for Reducing Patient Waiting Time in Nigerian Hospitals.</p>
+      <p>Development and Implementation of a Machine Learning-Based System for Predicting Patient Waiting Time in a Nigerian Hospital.</p>
     </div>
     """, unsafe_allow_html=True)
     st.markdown("""
     <div class="panel">
       <div class="section-title">Aim</div>
-      <p style="color:#64748b">To develop a machine-learning predictive model for estimating patient waiting time in the General Outpatient Department of a Nigerian teaching hospital.</p>
+      <p style="color:#64748b">To develop and implement a machine learning-based system for predicting patient waiting time and supporting patient-flow management within a Nigerian hospital context.</p>
       <hr>
       <div class="section-title">Core Method</div>
       <p style="color:#64748b">The prototype compares Linear Regression, Random Forest and XGBoost, then deploys the selected model through a Streamlit interface.</p>
@@ -424,8 +392,8 @@ elif nav == "My Profile":
     st.markdown('<div class="panel">', unsafe_allow_html=True)
     st.write(f"**Name:** {user_name}")
     st.write(f"**Email:** {user_email}")
-    st.write(f"**Access mode:** {'Google sign-in' if signed_in() else 'Local preview'}")
-    st.caption("Public deployment can enforce Google sign-in before dashboard access.")
+    st.write("**Access mode:** Demo login")
+    st.caption("This account is for academic demonstration only; it is not production authentication.")
     st.markdown('</div>', unsafe_allow_html=True)
 
 st.write("")
